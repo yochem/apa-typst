@@ -9,3 +9,14 @@ formatting the Typst way. This means no weird or undocumented template
 variables.
 
 Currently not ready yet!
+
+## To Do
+- [ ] Student title page
+- [x] Infer font size
+- [ ] Add bibliography style
+- [ ] typst.toml
+- [ ] Documentation
+- [ ] Cleanup
+- [ ] Localization: https://github.com/typst/typst/pull/2329
+- [x] quotes (§8.26-27)
+- [x] figures (§8.26-27)

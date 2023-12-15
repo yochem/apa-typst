@@ -1,9 +1,13 @@
+#let fontsize = state("fontsize", 0pt)
+
+
 #let dictHasKey(dict, key) = {
   dict.at(key, default: none) != none
 }
 
 #let authorHasOrcid(authors) = authors.map(author =>
-  if type(author) == dictionary and dictHasKey(author, "orcid") {
+  // if type(author) == dictionary and dictHasKey(author, "orcid") {
+  if type(author) == dictionary and "orcid" in author {
     true
   } else {
     false
@@ -23,13 +27,12 @@
   running-head: none,
   date: datetime.today(),
   authors: ("",),
-  author-note: none,
   affiliations: none,
   keywords: none,
   abstract: none,
   titlepage-type: "professional",
-  textsize: 12pt,
   authornote: none,
+  footnotepage: false,
   body
 ) = {
   let warning = text.with(red, weight: "bold")
@@ -66,23 +69,28 @@
     date: date
   )
   set text(
-    font: "Computer Modern",
-    lang: "en",
-    size: textsize,
     hyphenate: false // §2.23
   )
   set page(
     numbering: "1",
     paper: "a4",
     header: header,
-    header-ascent: doublespace,
+    header-ascent: 3em,
     footer: "",
     margin: (top: 1in + doublespace, rest: 1in), // §2.22
   )
+  set par(first-line-indent: 0.5in, leading: doublespace) // §2.21
+
+  // set font size, used for headings
+  style(styles => {
+    fontsize.update(measure(v(1em), styles).height)
+  })
 
   // §2.27
-  show heading: text.with(textsize, weight: "bold")
-  show heading: set block(above: doublespace, below: doublespace)
+  show heading: it => {
+    set block(above: doublespace, below: doublespace)
+    text(fontsize.at(it.location()), weight: "bold")[#it]
+  }
 
   show heading.where(level: 1): align.with(center)
   show heading.where(level: 3): text.with(style: "italic")
@@ -95,6 +103,44 @@
     box(it.body + [.])
   }
 
+  show footnote.entry: it => if not footnotepage { it }
+  set footnote.entry(separator: if not footnotepage { line(length: 30%, stroke: 0.5pt) })
+
+  show figure: it => {
+    block({
+      // TODO: sans-serif font
+      text(weight: "bold")[
+        #it.supplement
+        #counter(figure.where(kind: it.kind)).display()
+      ]
+      block(emph(it.caption.body))
+      it.body
+    })
+  }
+
+  show table: set par(hanging-indent: 0.15in)
+
+  set bibliography(title: "References")
+  show bibliography: it => {
+    set par(hanging-indent: 0.5in)
+    pagebreak(weak: true)
+    it
+  }
+
+  // §8.26-27
+  show quote: it => {
+    if it.body.has("text") and it.body.text.split().len() <= 40 {
+      it
+    } else {
+      pad(left: 0.5in, {
+        for para in it.body.children {
+          par(first-line-indent: 0.5in, para)
+        }
+      })
+    }
+  }
+
+
   // title page
   page({
     set align(center)
@@ -104,19 +150,18 @@
         #title
       ]
     ))
-    v(doublespace)
+    hide(par[empty line])
 
-    let showAuthors = if differentAffiliations(authors) {
-      authors.map(it =>
-        if type(it) == dictionary {
-          it.name + super(it.affiliations.sorted().map(str).join(","))
-        } else {
-          it
-        }
-      )
-    } else {
-      authors
-    }
+    // §2.6
+    let showAuthors = authors.map(it => {
+      if type(it) == dictionary {
+        it.name + super(it.at("affiliations", default: ()).sorted().map(str).join(","))
+      } else {
+        it
+      }
+    })
+
+    // §2.5
     if authors.len() == 1 {
       showAuthors.first()
     } else if authors.len() == 2 {
@@ -143,13 +188,12 @@
 
     v(1fr)
 
-    set par(first-line-indent: 0.5in, leading: doublespace) // §2.21
     // §2.7
     if authorHasOrcid(authors) {
       par(text(weight: "bold")[Author Note])
       set align(left)
       for author in authors {
-        if dictHasKey(author, "orcid") {
+        if "orcid" in author {
           let url = "https://orcid.org/" + author.orcid
           par[
             #author.name
@@ -159,18 +203,7 @@
         }
       }
     }
-    // if authorHasNewAffiliation(authors) {
-    //   block(text(weight: "bold")[Author Note])
-    //   set align(left)
-    //   for author in authors {
-    //     if dictHasKey(author, "newAffiliation") {
-    //       par[#h(0.5in)#author.name is now at #affiliations.at]
-    //     }
-    //   }
-    //   [test]
-    // }
   })
-  set par(first-line-indent: 0.5in, leading: doublespace) // §2.21
 
 
   if abstract != none {
@@ -185,5 +218,41 @@
   }
 
   heading(level: 1, title)
+  body
+
+}
+
+// 2.13
+#let showfootnotes = {
+  pagebreak(weak: true)
+  [= Footnotes]
+  set par(first-line-indent: 0.5in)
+  locate(loc => {
+    for (i, note) in query(footnote, loc).enumerate(start: 1) {
+      par[#super[#i] #note.body #lorem(20)]
+    }
+  })
+}
+
+#let appendix(body) = {
+  pagebreak()
+
+  set heading(supplement: "Appendix", numbering: "A")
+  locate(loc => {
+    let appendixSectionCount = query(selector(heading.where(supplement: [Appendix])).after(loc), loc).len()
+    if appendixSectionCount == 0 {
+      heading(supplement: [], numbering: none, "Appendix")
+    }
+  })
+
+  // show heading.where(supplement: [Appendix]): it => {
+  //   locate(loc => {
+  //     let appendixCount = counter(heading.where(supplement: [Appendix]))
+  //     if appendixCount.final(loc).first() > 1 {
+  //       appendixCount.display()
+  //     }
+  //   })
+  //   it.body
+  // }
   body
 }
