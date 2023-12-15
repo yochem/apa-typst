@@ -1,9 +1,5 @@
 #let fontsize = state("fontsize", 0pt)
-
-
-#let dictHasKey(dict, key) = {
-  dict.at(key, default: none) != none
-}
+#let doublespace = 1.7em
 
 #let authorHasOrcid(authors) = authors.map(author =>
   // if type(author) == dictionary and dictHasKey(author, "orcid") {
@@ -15,7 +11,7 @@
 ).contains(true)
 
 #let differentAffiliations(authors) = authors.map(author =>
-  if type(author) == dictionary and dictHasKey(author, "affiliations") {
+  if type(author) == dictionary and "affiliations" in authors {
     true
   } else {
     false
@@ -36,7 +32,6 @@
   body
 ) = {
   let warning = text.with(red, weight: "bold")
-  let doublespace = 1.7em
   show par: set block(spacing: doublespace) // §2.24
 
   // §2.18
@@ -88,8 +83,8 @@
 
   // §2.27
   show heading: it => {
-    set block(above: doublespace, below: doublespace)
-    text(fontsize.at(it.location()), weight: "bold")[#it]
+    block(below: 0em, text(fontsize.at(it.location()), weight: "bold")[#it.body])
+    par(text(size:0.35em, h(0.0em)))
   }
 
   show heading.where(level: 1): align.with(center)
@@ -133,9 +128,10 @@
       it
     } else {
       pad(left: 0.5in, {
-        for para in it.body.children {
-          par(first-line-indent: 0.5in, para)
-        }
+        // for para in it.body.children {
+        //   par(first-line-indent: 0.5in, para)
+        // }
+        it.body
       })
     }
   }
@@ -207,7 +203,12 @@
 
 
   if abstract != none {
-    heading(level: 1, "Abstract")
+    show heading: it => {
+      align(center, block(above: doublespace, below: doublespace, {
+        text(fontsize.at(it.location()), weight: "bold")[#it.body]
+      }))
+    }
+    heading(level: 1, supplement: [Abstract], "Abstract")
     abstract
     parbreak()
     if keywords != none {
@@ -237,22 +238,39 @@
 #let appendix(body) = {
   pagebreak()
 
-  set heading(supplement: "Appendix", numbering: "A")
+  show heading.where(supplement: [Appendix], level: 1): it => {
+    pagebreak(weak: true)
+    align(center, block(above: doublespace, below: doublespace, {
+      text(fontsize.at(it.location()), weight: "bold")[
+        #it.supplement
+        #if it.numbering != none [
+          #counter(heading).display()\
+          #it.body
+        ]
+      ]
+    }))
+    counter(figure.where(kind: table)).update(0)
+    counter(figure.where(kind: image)).update(0)
+    counter(math.equation).update(0)
+  }
+
+  set heading(supplement: "Appendix", numbering: "A1")
   locate(loc => {
-    let appendixSectionCount = query(selector(heading.where(supplement: [Appendix])).after(loc), loc).len()
+    let appendixSectionCount = query(selector(
+      heading.where(supplement: [Appendix])
+    ).after(loc), loc).len()
     if appendixSectionCount == 0 {
-      heading(supplement: [], numbering: none, "Appendix")
+      heading(supplement: [Appendix], numbering: none, "")
     }
   })
 
-  // show heading.where(supplement: [Appendix]): it => {
-  //   locate(loc => {
-  //     let appendixCount = counter(heading.where(supplement: [Appendix]))
-  //     if appendixCount.final(loc).first() > 1 {
-  //       appendixCount.display()
-  //     }
-  //   })
-  //   it.body
-  // }
+
+  let numberByChapter(obj) = locate(loc => {
+    let chapter = numbering("A", ..counter(heading).at(loc))
+    [#chapter#numbering("1", obj)]
+  })
+
+  set figure(numbering: n => numberByChapter(n))
+  set math.equation(numbering: n => numberByChapter(n))
   body
 }

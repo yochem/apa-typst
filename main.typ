@@ -16,10 +16,27 @@
   abstract: [
     #lorem(20)
   ],
-  footnotepage: true
+  footnotepage: false
 )
 
 #lorem(40)
+
+#pagebreak()
+
+= Section (lvl 1)
+
+== Sub Section (lvl 2)
+
+#lorem(20)
+
+=== Sub Section (lvl 3)
+#lorem(20)
+
+==== Sub Section (lvl 4)
+#lorem(20)
+
+===== Sub Section (lvl 5)
+#lorem(20)
 
 = Related Work
 
@@ -38,11 +55,11 @@ _Note._ For figure notes, just use: `_Note._ Here is a note`.
 #figure(
   table(
     columns: (3cm, auto, auto),
-    lorem(10), [aa], [bb],
+    [Long text in tables is wrapped and indented by 0.15 inch.], [aa], [bb],
   ),
-  caption: "helloo"
+  caption: "This is an example table"
 )<fig-table>
-_Note._ Factor
+_Note._ These tables can also have notes.
 
 
 In text reference @fig-table and @fig-image.
@@ -51,15 +68,11 @@ In text reference @fig-table and @fig-image.
 
 #lorem(100)
 In-text quotes #quote[are normal].
-
-#pagebreak()
-#lorem(10)
 #quote[
-  #lorem(20) 
+  While quotes longer than 40 words are in indented paragraphs. Like this one.
 
-  #lorem(20) 
-
-  #lorem(20) 
+  It can also have multiple paragraphs, which are also indented on their first
+  line. So nice!
 ]
 
 = Discussion
@@ -70,12 +83,24 @@ In-text quotes #quote[are normal].
 
 #show: appendix
 
-// = Test
-//
-// test
-//
-// = Test
-//
-// = Test
-//
-// test
+= Test
+
+== test
+
+test
+
+= Test
+
+= Test
+
+test
+
+$
+"test"
+$
+
+#figure(table(), caption: "")
+
+$
+"test"
+$
